@@ -84,26 +84,23 @@
 <body>
     <div class="container">
         <h1>Lifespan Calculator</h1>
-        <form id="lifespanForm">
+        <form action="/calculate" method="POST">
             <div id="questions">
                 {% for question in questions %}
                 <div class="question">
-                    <label>
-                        <input type="checkbox" name="factor" value="{{ loop.index0 }}">
-                        {{ question }}
-                    </label>
+                    <label>{{ question }}</label>
+                    <input type="text" name="{{ question }}" placeholder="Your answer">
                 </div>
                 {% endfor %}
             </div>
             <div class="gender-selection">
-                <label>
-                    <input type="radio" name="gender" value="male" required> Male
-                </label>
-                <label>
-                    <input type="radio" name="gender" value="female" required> Female
-                </label>
+                <label for="gender">Gender:</label>
+                <select name="gender" required>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
             </div>
-            <button type="submit">Calculate Lifespan</button>
+            <button type="submit">Submit</button>
         </form>
         <div id="result" class="hidden">
             <h2>Your Estimated Lifespan</h2>

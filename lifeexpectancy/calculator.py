@@ -1,26 +1,95 @@
 import numpy as np
 import pandas as pd
 
-# Load the dataset
-df = pd.read_csv(r"LiveLongerData.csv")
-df = df.drop(columns=["strength of science?", "effect", "Comment", "Note", "ID", "Sources", "Links"])
-
-
-def print_dataset(arg):
-    pd.set_option('display.max_columns', None)  # Show all columns
-    pd.set_option('display.width', 1000)  # Set the display width to prevent column wrapping
-    pd.set_option('display.max_colwidth', None)  # Ensure columns with long text are not truncated
-    df = arg
-    print(df)
-
-
-def calculate_lifespan_change(input_vector, gender):
+def calculate_lifespan_change(input_dict, gender):
     """
     Calculates the change in life expectancy based on the user's input.
     :param input_vector: List of binary responses (1 for 'yes', 0 for 'no') to lifestyle questions.
     :param gender: The gender of the user ('male' or 'female').
     :return: Total change in lifespan.
     """
+
+    def convert_to_vector(input_dict):
+        """
+        Convert a dictionary of user responses to a vector of numeric values.
+        :param input_dict: Dictionary with question index as key and response as value
+        :return: A list of numeric values representing user responses
+        """
+        # Define the mapping from response strings to their respective numerical values
+        response_mapping = {
+            "never": 0,
+            "rarely": 0.2514,
+            "slightly": 0.2514,  # In some contexts, "Slightly" corresponds to 0.2514
+            "sometimes": 0.7486,
+            "moderately": 0.7486,  # In some contexts, "Moderately" corresponds to 0.7486
+            "frequently": 1,
+            "regularly": 1,
+            "yes": 1,
+            "no": 0
+        }
+
+        # Convert each value in the input_dict using the response_mapping
+        output_vector = []
+        for value in input_dict.values():
+            # Normalize the response to lowercase and remove extra words
+            normalized_value = value.lower().split()[
+                0]  # Take the first word only (e.g., "slightly" from "slightly balanced")
+            if normalized_value in response_mapping:
+                output_vector.append(response_mapping[normalized_value])
+            else:
+                raise ValueError(f"Unrecognized response: {value}")
+
+        return output_vector
+    input_vector = convert_to_vector()
+    import pandas as pd
+
+    # Data dictionary
+    data = {
+        "Factor": [
+            "Smoking", "Alcohol (heavy abuse)", "A little alcohol", "A little wine",
+            "Healthy Eating", "Red Meat", "Less Food", "More Exercise", "A little exercise",
+            "Too much sleeping", "more professional responsibility", "more professional responsibility",
+            "More Health Checks #2", "Avoid heart disease", "Avoid Cancer", "Good genetics",
+            "Mental Illness", "Obesity", "More Optimism", "More conscientious & stable",
+            "More Pets", "Spending more time with women", "Good marriage", "More close Friends",
+            "More Money", "More Meditation", "City living", "Country living", "Living at high altitude",
+            "being a woman", "Polygamy"
+        ],
+        "Years gained / lost": [
+            -10.00, -11.00, 2.00, 5.00,
+            7.00, -1.00, 11.67, 2.00, 2.00,
+            -1.50, 3.50, 3.50,
+            0.14, 13.00, 15.00, 5.00,
+            -25.00, -8.50, 2.00, 2.50,
+            3.00, 15.00, 10.00, 5.30,
+            7.50, 12.00, -2.50, 8.00, 2.00,
+            5.10, 9.30
+        ],
+        "Strength of science as a number": [
+            3, 2, 1, 1,
+            3, 2, 1, 3, 3,
+            1, 1, 1,
+            2, 1, 1, 3,
+            3, 3, 1, 1,
+            2, 1, 2, 1,
+            2, 1, 1, 1, 3,
+            2, 1
+        ],
+        "Sexes affected": [
+            "Both", "Both", "Male", "Male",
+            "Both", "Both", "Both", "Both", "Both",
+            "Both", "Male", "Male",
+            "Both", "Both", "Both", "Both",
+            "Both", "Both", "Female", "Both",
+            "Both", "Male", "Both", "Both",
+            "Both", "Both", "Both", "Both, but esp. for men",
+            "Female", "Male"
+        ]
+    }
+
+    # Convert the dictionary to a DataFrame
+    df = pd.DataFrame(data)
+
     if len(input_vector) != len(df):
         raise ValueError(f"Input vector must have {len(df)} elements, one for each factor.")
 
@@ -35,8 +104,7 @@ def calculate_lifespan_change(input_vector, gender):
                 (gender == 'female' and affected.lower() != 'male'):
             total_change += years * input_vector[i]
 
-    return total_change/4
-
+    return total_change/6
 
 def get_user_input():
     """
@@ -44,32 +112,41 @@ def get_user_input():
     :return: A tuple containing the input_vector (list of binary responses) and gender.
     """
     questions = [
-        "Do you smoke regularly?", "Do you spend long periods of time sitting each day?",
-        "Do you often sleep for more than 9 hours a night?", "Would you describe yourself as an optimistic person?",
-        "Do you own pets or spend time with animals regularly?",
-        "Do you have a high level of professional responsibility or stress at work?",
-        "Do you maintain a balanced and healthy diet?", "Do you frequently eat red meat?",
-        "Do you consume alcohol in excessive amounts frequently?", "Do you live in a city or urban environment?",
-        "Have you been diagnosed with a mental illness?", "Do you consider yourself overweight or obese?",
-        "Do you get regular health check-ups or screenings?",
-        "Do you live or spend a significant amount of time at high altitudes?",
-        "Are you in a happy or healthy marriage?",
-        "Do you intentionally eat smaller portions of food to maintain or reduce weight?",
-        "Do you meditate regularly?", "Do you actively take steps to prevent heart disease?",
-        "Do you maintain a lifestyle that includes non-smoking, regular exercise, and healthy eating?",
-        "Do you spend significant time in the company of women?",
-        "Do you take preventive measures to reduce your risk of cancer?",
-        "Do you exercise regularly?", "Do you occasionally drink alcohol in moderation?",
-        "Would you describe yourself as conscientious and emotionally stable?",
-        "Do you experience regular sexual activity or orgasms?",
-        "Do you occasionally drink a small amount of wine?",
-        "Do you have a high level of financial security or income?",
-        "Are you a woman?", "Do you have a close group of friends with whom you regularly spend time?",
-        "Do you regularly attend religious services or have a strong faith?",
-        "Do you live in a rural or country environment?",
-        "Do you practice or believe in polygamy?",
-        "Do you believe you have a strong family history of good health or longevity?",
-        "Do you engage in light exercise or physical activity?", "Do you own or regularly interact with dogs?"
+        "How often do you smoke? (1: Never, 2: Rarely, 3: Sometimes, 4: Regularly)",
+        "How often do you spend long periods of time sitting each day? (1: Never, 2: Occasionally, 3: Frequently, 4: Every day)",
+        "How often do you sleep for more than 9 hours a night? (1: Never, 2: Occasionally, 3: Frequently, 4: Always)",
+        "To what extent would you describe yourself as an optimistic person? (1: Not at all, 2: Slightly, 3: Moderately, 4: Very optimistic)",
+        "How often do you spend time with pets or animals? (1: Never, 2: Rarely, 3: Sometimes, 4: Regularly)",
+        "How much professional responsibility or stress do you experience at work? (1: None, 2: Low, 3: Moderate, 4: High)",
+        "How balanced and healthy is your diet? (1: Not at all, 2: Slightly balanced, 3: Moderately balanced, 4: Very balanced and healthy)",
+        "How often do you eat red meat? (1: Never, 2: Occasionally, 3: Frequently, 4: Regularly)",
+        "How often do you consume alcohol in excessive amounts? (1: Never, 2: Rarely, 3: Sometimes, 4: Regularly)",
+        "Do you live in a city or urban environment? (1: No, 2: Slightly urban, 3: Moderately urban, 4: Completely urban)",
+        "Have you been diagnosed with a mental illness? (1: No, 2: Mild diagnosis, 3: Moderate diagnosis, 4: Severe diagnosis)",
+        "To what extent do you consider yourself overweight or obese? (1: Not at all, 2: Slightly, 3: Moderately, 4: Extremely)",
+        "How often do you get regular health check-ups or screenings? (1: Never, 2: Rarely, 3: Sometimes, 4: Regularly)",
+        "How much time do you spend at high altitudes? (1: None, 2: A little, 3: Moderate amount, 4: A lot)",
+        "How happy or healthy would you describe your marriage? (1: Not happy/healthy, 2: Slightly happy/healthy, 3: Moderately happy/healthy, 4: Very happy/healthy)",
+        "How often do you intentionally eat smaller portions of food to maintain or reduce weight? (1: Never, 2: Occasionally, 3: Frequently, 4: Always)",
+        "How often do you meditate? (1: Never, 2: Occasionally, 3: Frequently, 4: Regularly)",
+        "How actively do you take steps to prevent heart disease? (1: Not at all, 2: Slightly, 3: Moderately, 4: Very actively)",
+        "To what extent do you maintain a lifestyle that includes non-smoking, regular exercise, and healthy eating? (1: Not at all, 2: Slightly, 3: Moderately, 4: Very much so)",
+        "How often do you spend significant time in the company of women? (1: Never, 2: Occasionally, 3: Frequently, 4: Regularly)",
+        "How much effort do you put into reducing your risk of cancer? (1: None, 2: A little, 3: Some, 4: A lot)",
+        "How often do you exercise? (1: Never, 2: Occasionally, 3: Frequently, 4: Regularly)",
+        "How often do you drink alcohol in moderation? (1: Never, 2: Rarely, 3: Sometimes, 4: Frequently)",
+        "How conscientious and emotionally stable would you describe yourself? (1: Not at all, 2: Slightly, 3: Moderately, 4: Very much so)",
+        "How often do you experience sexual activity or orgasms? (1: Never, 2: Rarely, 3: Sometimes, 4: Regularly)",
+        "How often do you drink a small amount of wine? (1: Never, 2: Rarely, 3: Sometimes, 4: Regularly)",
+        "How financially secure do you feel? (1: Not at all, 2: Slightly secure, 3: Moderately secure, 4: Very secure)",
+        "Are you a woman? (1: No, 4: Yes)",
+        "How close is your group of friends, and how often do you spend time with them? (1: Not close/never, 2: Slightly close/rarely, 3: Moderately close/sometimes, 4: Very close/regularly)",
+        "How often do you attend religious services or practice a strong faith? (1: Never, 2: Rarely, 3: Sometimes, 4: Regularly)",
+        "Do you live in a rural or country environment? (1: No, 4: Yes)",
+        "Do you practice or believe in polygamy? (1: No, 4: Yes)",
+        "How strong is your family history of good health or longevity? (1: Not at all, 2: Slightly, 3: Moderately, 4: Very strong)",
+        "How often do you engage in light physical activity? (1: Never, 2: Occasionally, 3: Frequently, 4: Regularly)",
+        "How often do you interact with dogs? (1: Never, 2: Rarely, 3: Sometimes, 4: Regularly)"
     ]
 
     print("Please answer the following questions about your lifestyle:")
@@ -78,12 +155,19 @@ def get_user_input():
     # Ask each question and collect the response
     for question in questions:
         while True:
-            response = input(f"{question} (yes/no): ").lower()
-            if response in ['yes', 'no']:
-                input_vector.append(1 if response == 'yes' else 0)
+            response = input(f"{question} (option no 1/2/3/4): ").lower()
+            if response in ['1', '2', '3', '4']:
+                if response == '1':
+                    input_vector.append(0) # P( Z < - INF SIGMA) = 0
+                elif response == '2':
+                    input_vector.append(0.2514) # P( Z < -0.67 SIGMA) = 0.2514
+                elif response == '3':
+                    input_vector.append(0.7486) # P( Z < 0.67 SIGMA) = 0.7486
+                else:  # response == '4'
+                    input_vector.append(1)  # P( Z < INF SIGMA) = 1
                 break
             else:
-                print("Please answer with 'yes' or 'no'.")
+                print("Please answer with 1/2/3/4.")
 
     # Ask for gender
     while True:
@@ -108,49 +192,56 @@ def estimated_age(input_vector, gender):
     return int(average_age + change_in_age), change_in_age
 
 
+import json
+import numpy as np
+
+
 def report(input_vector, gender):
-    """
-    Generates a report based on the user's input and provides a life expectancy estimate,
-    including factors that positively or negatively impacted the user's lifespan.
-    """
     estimated_lifespan, change_in_age = estimated_age(input_vector, gender)
 
-    # Find factors that positively or negatively affected the user
-    negative_factors = []
-    positive_factors = []
+    # Use vectorized operations for faster calculation
+    gender_mask = (gender == 'male') & (df['sexes affected'].str.lower() != 'female') | \
+                  (gender == 'female') & (df['sexes affected'].str.lower() != 'male')
 
-    for i, (factor, years, affected) in enumerate(zip(df['Factor'], df['Years gained / lost'], df['sexes affected'])):
-        if input_vector[i] == 1:  # If the user answered 'yes' to this factor
-            if (gender == 'male' and affected.lower() != 'female') or (
-                    gender == 'female' and affected.lower() != 'male'):
-                if years < 0:
-                    negative_factors.append(f"{factor}: {years} years")
-                else:
-                    positive_factors.append(f"{factor}: +{years} years")
+    # Calculate the impact of each factor, considering partial impacts
+    impact = df['Years gained / lost'] * np.array(input_vector) * gender_mask
 
-    # Report the number of extra years (or fewer years) the person is expected to live
-    if change_in_age > 0:
-        extra_years = f"You're expected to live {change_in_age:.2f} extra years compared to the average life expectancy."
-    elif change_in_age < 0:
-        extra_years = f"You're expected to live {abs(change_in_age):.2f} fewer years compared to the average life expectancy."
-    else:
-        extra_years = "You're expected to live exactly the average life expectancy."
+    # Filter and sort factors by absolute impact
+    factors = df[impact != 0].copy()
+    factors['Adjusted Impact'] = impact[impact != 0]
+    factors = factors.sort_values('Adjusted Impact', key=abs, ascending=False)
 
-    print(f"""
-    Based on your responses and your gender ({gender}), we estimate that your life expectancy will be {estimated_lifespan} years.
+    # Prepare the factors list for JSON output
+    factors_list = []
+    for _, row in factors.iterrows():
+        factor = row['Factor']
+        full_impact = row['Years gained / lost']
+        adjusted_impact = row['Adjusted Impact']
+        percentage = (adjusted_impact / full_impact) * 100
 
-    {extra_years}
+        factors_list.append({
+            "factor": factor,
+            "impact": round(adjusted_impact, 2),
+            "percentage_of_full_impact": round(percentage, 1)
+        })
 
-    Factors that negatively affected your life expectancy:
-    {', '.join(negative_factors) if negative_factors else 'None'}
+    # Prepare the JSON output
+    output = {
+        "gender": gender,
+        "estimated_lifespan": estimated_lifespan,
+        "change_in_age": round(change_in_age, 2),
+        "factors": factors_list,
+        "recommendation": "To improve your health further, we recommend fully adopting positive lifestyle habits and addressing the negative factors listed above."
+    }
 
-    Factors that positively affected your life expectancy:
-    {', '.join(positive_factors) if positive_factors else 'None'}
+    # Return the JSON string
+    return json.dumps(output, indent=2)
 
-    To improve your health further, we recommend continuing with the positive lifestyle habits and addressing the negative factors listed above.
-    """)
-
-
+"""if __name__ == "__main__":
+    input_vector, gender = get_user_input()
+    report(input_vector, gender)
+"""
 # Example usage:
-input_vector, gender = get_user_input()  # Gather user input
+"""input_vector, gender = get_user_input()  # Gather user input
 report(input_vector, gender)  # Generate the report based on input
+"""
